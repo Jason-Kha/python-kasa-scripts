@@ -41,7 +41,12 @@ async def setHSV(bulb, h, s, v):
     await bulb.set_hsv(h, s, v, transition=250)
 
 
-def between_setHSV(bulb, h1, s1, v1, h2, s2, v2):
+async def turnOff(bulb):
+    await bulb.update()
+    await bulb.turn_off()
+
+
+def between_setHSV(bulb, h1, s1, v1, h2, s2, v2, isOff):
     loop1 = asyncio.new_event_loop()
     asyncio.set_event_loop(loop1)
 
@@ -49,6 +54,7 @@ def between_setHSV(bulb, h1, s1, v1, h2, s2, v2):
     loop1.run_until_complete(setHSV(bulb, h1, s1, v1))
     loop1.close()
 
+    # wait
     time.sleep(.55)
 
     # change back to old color
@@ -58,18 +64,32 @@ def between_setHSV(bulb, h1, s1, v1, h2, s2, v2):
     loop2.run_until_complete(setHSV(bulb, h2, s2, v2))
     loop2.close()
 
+    # if bulb was originally off, switch it back off
+    if isOff:
+        loop3 = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop3)
+        loop3.run_until_complete(turnOff(bulb))
+        loop3.close()
+
 
 async def main():
     BulbList = []
     HSVList = []
+    OffList = []
     lightCount = len(args.ip)
 
     # store SmartBulb information
     for i in range(0, lightCount):
         BulbList.append(SmartBulb(args.ip[i]))
         HSVList.append(await getHSV(args.ip[i]))
+        await BulbList[i].update()
+        OffList.append(BulbList[i].is_off)
 
     '''
+    for i in OffList:
+        print(OffList[i])
+
+
     # store list of original hsv's here
     for h, s, v in HSVList:
         print(h, s, v)
@@ -78,7 +98,7 @@ async def main():
     # blink with threads
     threads = list()
     for i in range(0, lightCount):
-        x = threading.Thread(target=between_setHSV, args=(BulbList[i], args.h[0], args.s[0], args.v[0], *HSVList[i]))
+        x = threading.Thread(target=between_setHSV, args=(BulbList[i], args.h[0], args.s[0], args.v[0], *HSVList[i], OffList[i]))
         threads.append(x)
         x.start()
 
