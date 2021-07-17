@@ -64,14 +64,16 @@ async def main():
     HSVList = []
     lightCount = len(args.ip)
 
-    # store SmartBulb information THREAD
+    # store SmartBulb information
     for i in range(0, lightCount):
         BulbList.append(SmartBulb(args.ip[i]))
         HSVList.append(await getHSV(args.ip[i]))
 
-    # store list of original hsv's here THREAD
+    '''
+    # store list of original hsv's here
     for h, s, v in HSVList:
         print(h, s, v)
+    '''
 
     # blink with threads
     threads = list()
